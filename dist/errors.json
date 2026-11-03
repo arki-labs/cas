@@ -1,0 +1,29 @@
+[
+  {
+    "code": "cas.no_value",
+    "package": "@arki/cas",
+    "kind": "failure",
+    "what": "The text parses, but the expression has no value: `x/0`, or an overflow. `cause` is the `@arki/math` error.",
+    "fix": "Show the user that the expression has no value; read `cause.code` for which rule.",
+    "verify": "cd packages/cas && bun run vitest run src/text.test.ts",
+    "source": "src/failures.ts:55"
+  },
+  {
+    "code": "cas.over_budget",
+    "package": "@arki/cas",
+    "kind": "failure",
+    "what": "The text went over a cas budget (terms, degree, digits, fuel, order, steps, factor sizes). `cause` is the `CasLimitError` with `budget`, `limit` and `actual`.",
+    "fix": "Reject the input as too large, or raise `options.limits` on purpose.",
+    "verify": "cd packages/cas && bun run vitest run src/text.test.ts",
+    "source": "src/failures.ts:43"
+  },
+  {
+    "code": "cas.unsupported_text",
+    "package": "@arki/cas",
+    "kind": "failure",
+    "what": "The text parses, but the verb does not handle it: a function it cannot differentiate (`floor(x)`), a non-polynomial given to `factor`, a kernel given to `rationalize`. `cause` is the `CasError`, with `code` and `span`.",
+    "fix": "Show the user the span from `cause` and the reason from `cause.code`; do not retry the same text.",
+    "verify": "cd packages/cas && bun run vitest run src/text.test.ts",
+    "source": "src/failures.ts:31"
+  }
+]

@@ -1,0 +1,219 @@
+/**
+ * Domain restrictions and lost conditions (RFC §6).
+ *
+ * The natural domain of an input is every denominator ≠ 0 plus the
+ * restrictions of its kernels: `ln`/`log` argument > 0, `log(u, b)` base > 0
+ * and ≠ 1, `sqrt` and even-root arguments ≥ 0, `u^(p/q)` base ≥ 0 (> 0 for a
+ * negative exponent), `asin`/`acos` 1 − u² ≥ 0, `acosh` u − 1 ≥ 0, `atanh`
+ * 1 − u² > 0, `asec`/`acsc` u² − 1 ≥ 0, `acoth` u² − 1 > 0, `asech` u > 0 and
+ * 1 − u² ≥ 0, `tan`/`sec` `cos(u)` ≠ 0, `cot`/`csc` `sin(u)` ≠ 0,
+ * `coth`/`csch`/`acsch` u ≠ 0. The inverse reciprocal functions follow expr's
+ * definitions through `1/u` (`asec(u) = acos(1/u)`). Restrictions are collected from every kernel the input built, kept or
+ * dropped, so `0*ln(x)` still knows about `x > 0`.
+ *
+ * A restriction is lost when the result no longer shows it. Every lost
+ * restriction is returned, except one the sign oracle proves from the
+ * expression and the caller's assumptions (`x^2 + 1 ≠ 0`; `x ≥ 0` when `x`
+ * is assumed positive): it holds wherever the result is claimed to hold.
+ *
+ * Internal module.
+ */
+import { DivisionByZeroError } from '@arki/math/errors';
+import { rationalValue } from './context.js';
+import { exprOf } from './emit.js';
+import { constantValue, divideExact, gcd, generators, isZero, multiply, polyKey, rationalContent, scale, squareFreePart, subtract, } from './poly.js';
+import { kernelValue } from './read.js';
+import { holds, SignOracle } from './sign.js';
+/** 1 − u² as a value. */
+function oneMinusSquare(u, ctx) {
+    const den = multiply(u.den, u.den, ctx.budget);
+    return { num: subtract(den, multiply(u.num, u.num, ctx.budget)), den };
+}
+/** u² − 1 as a value. */
+function squareMinusOne(u, ctx) {
+    const den = multiply(u.den, u.den, ctx.budget);
+    return { num: subtract(multiply(u.num, u.num, ctx.budget), den), den };
+}
+/** u − 1 as a value. */
+function minusOne(u) {
+    return { num: subtract(u.num, u.den), den: u.den };
+}
+function kernelDomain(gen, ctx, into) {
+    const [u, v] = gen.args;
+    if (u === undefined)
+        return;
+    const fn = gen.fn;
+    const n = v === undefined ? undefined : rationalValue(v);
+    const signed = (subject, relation) => void into.signed.push({ subject, relation });
+    if (fn === 'ln' || fn === 'log' || fn === 'log10' || fn === 'log2')
+        signed(u, 'positive');
+    if (fn === 'log' && v !== undefined) {
+        signed(v, 'positive');
+        into.nonzero.push(minusOne(v).num);
+    }
+    // Even roots: nthRoot(u) is sqrt(u); an odd degree is defined for every real u.
+    if (fn === 'sqrt' || (fn === 'nthRoot' && (v === undefined || (n?.isInteger() === true && n.numerator % 2n === 0n))))
+        signed(u, 'nonnegative');
+    if (fn === '^' && n !== undefined && !n.isInteger())
+        signed(u, n.isNegative() ? 'positive' : 'nonnegative');
+    if (fn === 'asin' || fn === 'acos' || fn === 'atanh')
+        signed(oneMinusSquare(u, ctx), fn === 'atanh' ? 'positive' : 'nonnegative');
+    if (fn === 'acosh')
+        signed(minusOne(u), 'nonnegative');
+    if (fn === 'asec' || fn === 'acsc')
+        signed(squareMinusOne(u, ctx), 'nonnegative');
+    if (fn === 'acoth')
+        signed(squareMinusOne(u, ctx), 'positive');
+    if (fn === 'asech') {
+        signed(u, 'positive');
+        signed(oneMinusSquare(u, ctx), 'nonnegative');
+    }
+    if (fn === 'tan' || fn === 'sec' || fn === 'cot' || fn === 'csc') {
+        into.nonzero.push(kernelValue(fn === 'tan' || fn === 'sec' ? 'cos' : 'sin', [u], gen.span, ctx).num);
+    }
+    if (fn === 'coth' || fn === 'csch' || fn === 'acsch')
+        into.nonzero.push(u.num);
+}
+/**
+ * The input's domain: the divisors before `divisors` and the restrictions of
+ * the generators before `kernels`, from `firstDivisor` and `firstKernel` on
+ * (a derivative reads one tree per order and collects each range once).
+ */
+export function inputDomain(ctx, kernels = ctx.generators.length, divisors = ctx.divisors.length, firstKernel = 0, firstDivisor = 0) {
+    const domain = { nonzero: ctx.divisors.slice(firstDivisor, divisors), signed: [] };
+    for (let g = firstKernel; g < kernels; g++) {
+        const gen = ctx.generators[g];
+        if (gen?.kind === 'kernel')
+            kernelDomain(gen, ctx, domain);
+    }
+    return domain;
+}
+/** The restrictions a value shows: its denominators and its kernels' restrictions, recursively. */
+export function valueDomain(ctx, r) {
+    const domain = { nonzero: [r.den], signed: [] };
+    const seen = new Set();
+    const stack = [...generators(r.num), ...generators(r.den)];
+    for (let g = stack.pop(); g !== undefined; g = stack.pop()) {
+        if (seen.has(g))
+            continue;
+        seen.add(g);
+        const gen = ctx.generators[g];
+        if (gen?.kind !== 'kernel')
+            continue;
+        for (const arg of gen.args) {
+            domain.nonzero.push(arg.den);
+            stack.push(...generators(arg.num), ...generators(arg.den));
+        }
+        kernelDomain(gen, ctx, domain);
+    }
+    return domain;
+}
+/** `subject` scaled by a positive constant so equal restrictions print alike (`2*x - 2 ≥ 0` is `x - 1 ≥ 0`). */
+function primitive(subject) {
+    if (isZero(subject.num))
+        return subject;
+    return { num: scale(subject.num, rationalContent(subject.num).inverse()), den: subject.den };
+}
+/** `u` for a lone `abs(u)` or `sqrt(u)` with a polynomial `u`: `abs(u) ≠ 0` and `sqrt(u) ≠ 0` are `u ≠ 0`. */
+function absArgument(p, ctx) {
+    const [g, ...rest] = generators(p);
+    const gen = g === undefined ? undefined : ctx.generators[g];
+    const [u] = gen?.kind === 'kernel' && (gen.fn === 'abs' || gen.fn === 'sqrt') ? gen.args : [];
+    if (rest.length > 0 || p.size !== 1 || u === undefined || constantValue(u.den) === undefined)
+        return undefined;
+    return u.num;
+}
+/** The factors of `p` not shared with any of `visible`. */
+function unshared(p, visible, ctx) {
+    let q = p;
+    for (const v of visible) {
+        for (let g = gcd(q, v, ctx.budget); constantValue(g) === undefined; g = gcd(q, v, ctx.budget)) {
+            q = divideExact(q, g, ctx.budget) ?? q;
+        }
+    }
+    return q;
+}
+/**
+ * The conditions a result carries (RFC §6): the input's restrictions it no
+ * longer shows. `map` rewrites each subject the way the result was rewritten
+ * (`simplify`), so a subject is compared and printed in the result's terms.
+ * A subject that maps to zero means the input is defined nowhere.
+ */
+export function lostConditions(ctx, input, value, emitter, map = r => r) {
+    const oracle = new SignOracle(ctx, ctx.assumptions);
+    const visible = valueDomain(ctx, value);
+    // Normal forms are canonical within a call (equal kernels are one generator), so structure is a key.
+    const keyOf = (r) => {
+        const p = primitive(r);
+        return `${polyKey(p.num)}/${polyKey(p.den)}`;
+    };
+    const nonzero = [
+        ...visible.nonzero,
+        ...visible.signed.filter(s => s.relation === 'positive').map(s => s.subject.num),
+    ];
+    // The subjects the result shows, built only if a signed restriction survives the oracle.
+    let shown;
+    const shownFor = (key) => {
+        if (shown === undefined) {
+            shown = new Map();
+            for (const s of visible.signed) {
+                const k = keyOf(s.subject);
+                shown.set(k, (shown.get(k) ?? new Set()).add(s.relation));
+            }
+        }
+        return shown.get(key);
+    };
+    const out = [];
+    const listed = new Set();
+    const push = (subject, relation) => {
+        const key = `${relation}:${subject.source}`;
+        if (listed.has(key))
+            return;
+        listed.add(key);
+        out.push({ subject, relation, reason: 'domain' });
+    };
+    for (const p of input.nonzero) {
+        const mapped = map(ctx.fromPoly(p)).num;
+        if (isZero(mapped))
+            throw new DivisionByZeroError('cas: division by zero');
+        const q = unshared(mapped, nonzero, ctx);
+        if (ctx.isConstant(q))
+            continue;
+        const part = squareFreePart(absArgument(q, ctx) ?? q, ctx.budget);
+        if (holds(oracle.poly(part).signs, 'nonzero'))
+            continue;
+        push(exprOf(emitter.polyNode(part), ctx), 'nonzero');
+    }
+    for (const s of input.signed) {
+        const subject = primitive(map(s.subject));
+        if (holds(oracle.value(subject).signs, s.relation))
+            continue;
+        const relations = shownFor(keyOf(subject));
+        if (relations?.has('positive') === true || relations?.has(s.relation) === true)
+            continue;
+        push(exprOf(emitter.node(subject), ctx), s.relation);
+    }
+    return mergeConditions(out);
+}
+/** `d` implies `c` on the same subject: itself; `> 0` gives `≠ 0` and `≥ 0`; `< 0` gives `≠ 0`. */
+function implies(d, c) {
+    return d === c || (c === 'nonzero' && d !== 'nonnegative') || (d === 'positive' && c === 'nonnegative');
+}
+/**
+ * Conditions from several sources as one list (RFC §6): `u ≥ 0` and `u ≠ 0`
+ * with one reason become `u > 0`; of equal conditions the first is kept; and
+ * a condition that another one implies on the same subject is dropped
+ * (`x > 0` makes `x ≠ 0` and `x ≥ 0` redundant, whatever their reasons).
+ */
+export function mergeConditions(...lists) {
+    const flat = lists.flat();
+    const all = flat.map(c => c.relation === 'nonnegative' &&
+        flat.some(d => d.relation === 'nonzero' && d.reason === c.reason && d.subject.source === c.subject.source)
+        ? { ...c, relation: 'positive' }
+        : c);
+    return all.filter((c, i) => !all.some((d, j) => j !== i &&
+        d.subject.source === c.subject.source &&
+        implies(d.relation, c.relation) &&
+        (d.relation !== c.relation || j < i)));
+}
+//# sourceMappingURL=conditions.js.map

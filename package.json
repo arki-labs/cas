@@ -1,0 +1,76 @@
+{
+  "name": "@arki/cas",
+  "version": "0.1.0",
+  "description": "A bounded computer algebra package on @arki/expr: exact polynomials and rational functions with π and e as symbolic coefficients, closed-form roots, budgets on every input, and results as canonical expr ASTs.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/arki-labs/arki.git"
+  },
+  "homepage": "https://arki.dev",
+  "bugs": {
+    "url": "https://github.com/arki-labs/arki/issues"
+  },
+  "keywords": [
+    "arki",
+    "typescript",
+    "math",
+    "cas",
+    "algebra",
+    "polynomial",
+    "symbolic",
+    "roots",
+    "simplify",
+    "derivative",
+    "differentiation"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./derivation": {
+      "types": "./dist/derivation.d.ts",
+      "import": "./dist/derivation.js",
+      "default": "./dist/derivation.js"
+    },
+    "./derivative": {
+      "types": "./dist/derivative.d.ts",
+      "import": "./dist/derivative.js",
+      "default": "./dist/derivative.js"
+    },
+    "./polynomial": {
+      "types": "./dist/polynomial.d.ts",
+      "import": "./dist/polynomial.js",
+      "default": "./dist/polynomial.js"
+    },
+    "./simplify": {
+      "types": "./dist/simplify.d.ts",
+      "import": "./dist/simplify.js",
+      "default": "./dist/simplify.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist/**",
+    "src/**",
+    "!src/**/*.test.*",
+    "!src/**/*.spec.*",
+    "!src/**/__tests__/**",
+    "README.md",
+    "docs/**",
+    "llms.txt",
+    "LICENSE",
+    "package.json"
+  ],
+  "dependencies": {
+    "@arki/expr": "0.1.0",
+    "@arki/math": "0.2.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

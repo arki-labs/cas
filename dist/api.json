@@ -1,0 +1,481 @@
+{
+  "package": "@arki/cas",
+  "version": "0.1.0",
+  "entries": [
+    {
+      "subpath": ".",
+      "name": "AbortSignalLike",
+      "kind": "type",
+      "signature": "export type AbortSignalLike = { readonly aborted: boolean; readonly reason?: unknown; };",
+      "jsdocSummary": "The part of `AbortSignal` that `sample` reads."
+    },
+    {
+      "subpath": ".",
+      "name": "Assumption",
+      "kind": "type",
+      "signature": "export type Assumption = 'nonzero' | 'positive' | 'nonnegative' | 'negative';",
+      "jsdocSummary": "What the caller knows about one variable's sign (RFC §6). v1 is real-only: every variable ranges over ℝ."
+    },
+    {
+      "subpath": ".",
+      "name": "Assumptions",
+      "kind": "type",
+      "signature": "export type Assumptions = Readonly<Record<string, Assumption>>;",
+      "jsdocSummary": "Assumptions per variable name, for one call."
+    },
+    {
+      "subpath": ".",
+      "name": "CAS_TEXT_FAILURES",
+      "kind": "variable",
+      "signature": "export declare const CAS_TEXT_FAILURES: readonly [import(\"@arki/failure\").FailureDefinition<\"cas.unsupported_text\", undefined>, import(\"@arki/failure\").FailureDefinition<\"cas.over_budget\", undefined>, import(\"@arki/failure\").FailureDefinition<\"cas.no_value\", undefined>];",
+      "jsdocSummary": "What a verb returns for a string it cannot work with besides {@link ParseFailure}. The one list; {@link CasTextFailure} is derived from it."
+    },
+    {
+      "subpath": ".",
+      "name": "CasBudget",
+      "kind": "type",
+      "signature": "export type CasBudget = keyof CasLimits;",
+      "jsdocSummary": ""
+    },
+    {
+      "subpath": ".",
+      "name": "CasError",
+      "kind": "class",
+      "signature": "export declare class CasError extends MathError { readonly code: CasErrorCode; readonly remediation: string; /** Where in the input's `source` the problem is, when it has a place. */ readonly span: Span | undefined; constructor(message: string, code: CasErrorCode, span?: Span); }",
+      "jsdocSummary": "The input is outside what a cas verb handles. Values never cause this; budgets throw `CasLimitError`."
+    },
+    {
+      "subpath": ".",
+      "name": "CasErrorCode",
+      "kind": "type",
+      "signature": "export type CasErrorCode = 'unsupported-function' | 'not-differentiable' | 'not-in-domain' | 'bad-variable' | 'not-rational' | 'not-polynomial' | 'unsupported-constant';",
+      "jsdocSummary": "Why a cas verb rejected its input. Apps translate messages by this code."
+    },
+    {
+      "subpath": ".",
+      "name": "CasInput",
+      "kind": "type",
+      "signature": "export type CasInput = Expr | string;",
+      "jsdocSummary": "An expr AST, or a string parsed with expr's canonical `scientific` syntax."
+    },
+    {
+      "subpath": ".",
+      "name": "CasLimitError",
+      "kind": "class",
+      "signature": "export declare class CasLimitError extends ResourceLimitError { readonly budget: CasBudget; readonly limit: number; readonly actual: number; constructor(budget: CasBudget, limit: number, actual: number); }",
+      "jsdocSummary": "An input went over one of its budgets. Thrown before the expensive work wherever a bound can be computed."
+    },
+    {
+      "subpath": ".",
+      "name": "CasLimits",
+      "kind": "type",
+      "signature": "export type CasLimits = { /** Nodes of the input tree, and of each output tree before printing. Default 5 000. */ readonly nodes: number; /** Nesting depth of the input tree. Default 256. */ readonly depth: number; /** Terms an expansion may produce, estimated before it runs. Default 10 000. */ readonly terms: number; /** Degree in any one generator, checked before powers and products. Default 1 000. */ readonly degree: number; /** Degree of the inputs of a polynomial gcd. Default 64. */ readonly gcdDegree: number; /** Digits of any coefficient, estimated before multiplying; also the precision cap of π/e sign decisions. Default 1 000. */ readonly digits: number; /** Arithmetic steps per call. Default 100 000. */ readonly fuel: number; /** Highest derivative order, checked before differentiating. Default 10. */ readonly order: number; /** Steps of one derivation, bounded before each order from the size of what it differentiates. Default 2 000. */ readonly steps: number; /** Printed nodes across a derivation's steps, counted before any step is printed. Default 50 000. */ readonly stepNodes: number; /** Degree of each square-free part `factor` splits over ℚ. Default 128. */ readonly factorDegree: number; /** Digits of the largest coefficient `factor` splits over ℚ. Default 300. */ readonly factorDigits: number; /** Digits of the modulus p^k that Hensel lifting reaches, computed before lifting. Default 2 000. */ readonly liftDigits: number; /** Candidate products tried while recombining modular factors. Default 65 536. */ readonly recombination: number; };",
+      "jsdocSummary": "Budgets (RFC §12). Each is a positive integer."
+    },
+    {
+      "subpath": ".",
+      "name": "CasOptions",
+      "kind": "type",
+      "signature": "export type CasOptions = { /** Functions and constants of the input. Default `scientific`. */ readonly language?: Language; /** Signs the caller knows, per variable. A rewrite that relies on one returns it as a condition with reason `assumed`. */ readonly assume?: Assumptions; readonly limits?: Partial<CasLimits>; /** Checked every 1 024 fuel units; the call throws `signal.reason` once it is aborted. */ readonly signal?: AbortSignalLike; /** `'fraction'` (default) prints `x/50`; `'decimal'` prints a terminating rational as a decimal (`0.02*x`). */ readonly numbers?: 'fraction' | 'decimal'; };",
+      "jsdocSummary": ""
+    },
+    {
+      "subpath": ".",
+      "name": "CasResult",
+      "kind": "type",
+      "signature": "export type CasResult = { readonly result: Expr; readonly conditions: readonly Condition[]; };",
+      "jsdocSummary": ""
+    },
+    {
+      "subpath": ".",
+      "name": "CasTextFailure",
+      "kind": "type",
+      "signature": "export type CasTextFailure = ParseFailure | FailureOf<(typeof CAS_TEXT_FAILURES)[number]>;",
+      "jsdocSummary": "A failure value returned by a cas verb given a string: `parse`'s own failure, or one of {@link CAS_TEXT_FAILURES}."
+    },
+    {
+      "subpath": ".",
+      "name": "Condition",
+      "kind": "type",
+      "signature": "export type Condition = { readonly subject: Expr; readonly relation: Relation; readonly reason: 'domain' | 'differentiable' | 'assumed'; };",
+      "jsdocSummary": "A restriction the result relies on (RFC §6). `subject` is canonical, e.g. `x - 1`."
+    },
+    {
+      "subpath": ".",
+      "name": "conditionToLatex",
+      "kind": "function",
+      "signature": "export declare function conditionToLatex(condition: Condition): string;",
+      "jsdocSummary": "`x \\neq 0`, `x > 0`, `x \\geq 0`, `x < 0`: math notation, so apps need no translation for it."
+    },
+    {
+      "subpath": ".",
+      "name": "DEFAULT_LIMITS",
+      "kind": "variable",
+      "signature": "export declare const DEFAULT_LIMITS: CasLimits;",
+      "jsdocSummary": ""
+    },
+    {
+      "subpath": ".",
+      "name": "NoCasValue",
+      "kind": "variable",
+      "signature": "export declare const NoCasValue: import(\"@arki/failure\").FailureDefinition<\"cas.no_value\", undefined>;",
+      "jsdocSummary": "The text parses, but the expression has no value: `x/0`, or an overflow. `cause` is the `@arki/math` error."
+    },
+    {
+      "subpath": ".",
+      "name": "OverCasBudget",
+      "kind": "variable",
+      "signature": "export declare const OverCasBudget: import(\"@arki/failure\").FailureDefinition<\"cas.over_budget\", undefined>;",
+      "jsdocSummary": "The text went over a cas budget (terms, degree, digits, fuel, order, steps, factor sizes). `cause` is the `CasLimitError` with `budget`, `limit` and `actual`."
+    },
+    {
+      "subpath": ".",
+      "name": "Relation",
+      "kind": "type",
+      "signature": "export type Relation = 'nonzero' | 'positive' | 'nonnegative' | 'negative';",
+      "jsdocSummary": ""
+    },
+    {
+      "subpath": ".",
+      "name": "UnsupportedText",
+      "kind": "variable",
+      "signature": "export declare const UnsupportedText: import(\"@arki/failure\").FailureDefinition<\"cas.unsupported_text\", undefined>;",
+      "jsdocSummary": "The text parses, but the verb does not handle it: a function it cannot differentiate (`floor(x)`), a non-polynomial given to `factor`, a kernel given to `rationalize`. `cause` is the `CasError`, with `code` and `span`."
+    },
+    {
+      "subpath": "./derivation",
+      "name": "CasInput",
+      "kind": "type",
+      "signature": "export type CasInput = Expr | string;",
+      "jsdocSummary": "An expr AST, or a string parsed with expr's canonical `scientific` syntax."
+    },
+    {
+      "subpath": "./derivation",
+      "name": "CasOptions",
+      "kind": "type",
+      "signature": "export type CasOptions = { /** Functions and constants of the input. Default `scientific`. */ readonly language?: Language; /** Signs the caller knows, per variable. A rewrite that relies on one returns it as a condition with reason `assumed`. */ readonly assume?: Assumptions; readonly limits?: Partial<CasLimits>; /** Checked every 1 024 fuel units; the call throws `signal.reason` once it is aborted. */ readonly signal?: AbortSignalLike; /** `'fraction'` (default) prints `x/50`; `'decimal'` prints a terminating rational as a decimal (`0.02*x`). */ readonly numbers?: 'fraction' | 'decimal'; };",
+      "jsdocSummary": ""
+    },
+    {
+      "subpath": "./derivation",
+      "name": "CasResult",
+      "kind": "type",
+      "signature": "export type CasResult = { readonly result: Expr; readonly conditions: readonly Condition[]; };",
+      "jsdocSummary": ""
+    },
+    {
+      "subpath": "./derivation",
+      "name": "CasTextFailure",
+      "kind": "type",
+      "signature": "export type CasTextFailure = ParseFailure | FailureOf<(typeof CAS_TEXT_FAILURES)[number]>;",
+      "jsdocSummary": "A failure value returned by a cas verb given a string: `parse`'s own failure, or one of {@link CAS_TEXT_FAILURES}."
+    },
+    {
+      "subpath": "./derivation",
+      "name": "Condition",
+      "kind": "type",
+      "signature": "export type Condition = { readonly subject: Expr; readonly relation: Relation; readonly reason: 'domain' | 'differentiable' | 'assumed'; };",
+      "jsdocSummary": "A restriction the result relies on (RFC §6). `subject` is canonical, e.g. `x - 1`."
+    },
+    {
+      "subpath": "./derivation",
+      "name": "derivation",
+      "kind": "function",
+      "signature": "export declare function derivation(input: Expr, variable: string, options?: DerivationOptions): Derivation; ; export declare function derivation(input: CasInput, variable: string, options?: DerivationOptions): Derivation | CasTextFailure;",
+      "jsdocSummary": "`derivative`'s result and conditions, plus the derivation tree (RFC §9.3). The result is computed exactly as `derivative` computes it."
+    },
+    {
+      "subpath": "./derivation",
+      "name": "Derivation",
+      "kind": "type",
+      "signature": "export type Derivation = CasResult & { readonly steps: DerivationStep; };",
+      "jsdocSummary": ""
+    },
+    {
+      "subpath": "./derivation",
+      "name": "DerivationOptions",
+      "kind": "type",
+      "signature": "export type DerivationOptions = CasOptions & { /** How many times to differentiate. Default 1; at most the `order` budget (default 10). */ readonly order?: number; };",
+      "jsdocSummary": ""
+    },
+    {
+      "subpath": "./derivation",
+      "name": "DerivationStep",
+      "kind": "type",
+      "signature": "export type DerivationStep = { /** Pre-order position, stable within one result; the root is 0. */ readonly index: number; readonly rule: StepRule; readonly template: StepTemplate; /** The operand: for a derivative rule the function being differentiated; for a simplify rule the whole expression. */ readonly before: Expr; /** The derivative of `before` (`fold` applied only), or the rewritten expression. */ readonly after: Expr; readonly children: readonly DerivationStep[]; /** Conditions this step introduced. */ readonly conditions?: readonly Condition[]; };",
+      "jsdocSummary": ""
+    },
+    {
+      "subpath": "./derivation",
+      "name": "DerivativeRule",
+      "kind": "type",
+      "signature": "export type DerivativeRule = 'constant' | 'variable' | 'sum' | 'constant-multiple' | 'product' | 'quotient' | 'power' | 'exponential' | 'general-power' | 'logarithm' | 'function' | 'root' | 'absolute-value' | 'chain';",
+      "jsdocSummary": "The differentiation rules of RFC §9.3."
+    },
+    {
+      "subpath": "./derivation",
+      "name": "NormalPhase",
+      "kind": "type",
+      "signature": "export type NormalPhase = 'fold' | 'expand' | 'collect' | 'cancel';",
+      "jsdocSummary": "The phases of the algebraic normal form, computed together in one step."
+    },
+    {
+      "subpath": "./derivation",
+      "name": "ruleFormula",
+      "kind": "function",
+      "signature": "export declare function ruleFormula(rule: StepRule): string;",
+      "jsdocSummary": "The rule's formula in LaTeX, language-neutral: `(f g)' = f' g + f g'`. Empty for the container steps (`derivation`, `order`, `simplification`, `normal-form`, `repeat`), whose meaning is their children."
+    },
+    {
+      "subpath": "./derivation",
+      "name": "SimplifyRule",
+      "kind": "type",
+      "signature": "export type SimplifyRule = 'fold' | 'expand' | 'collect' | 'cancel' | 'integer-powers' | 'fractional-powers' | 'sqrt-of-square' | 'square-of-sqrt' | 'exp-ln' | 'ln-exp' | 'exp-product' | 'abs-sign' | 'parity' | 'special-values' | 'factor-out';",
+      "jsdocSummary": "The rule ids of RFC §7, in table order. The same ids label simplification steps in a derivation."
+    },
+    {
+      "subpath": "./derivation",
+      "name": "StepRule",
+      "kind": "type",
+      "signature": "export type StepRule = /** The root: all orders. */ { readonly kind: 'derivation'; readonly order: number; } /** One order: its differentiation tree, then its simplification. */ | { readonly kind: 'order'; readonly order: number; } | { readonly kind: 'derivative'; readonly id: DerivativeRule; readonly fn?: string; } /** A subterm already derived in step `of`: derived once, shown once. */ | { readonly kind: 'repeat'; readonly of: number; } /** An order's normalization: its children are the phases below. */ | { readonly kind: 'simplification'; } | { readonly kind: 'normal-form'; readonly phases: readonly NormalPhase[]; } | { readonly kind: 'simplify'; readonly id: SimplifyRule; };",
+      "jsdocSummary": ""
+    },
+    {
+      "subpath": "./derivation",
+      "name": "StepTemplate",
+      "kind": "type",
+      "signature": "export type StepTemplate = { /** The translation key, one of `TEMPLATE_KEYS`: `'derivative.product'`, `'derivative.function.sin'`, `'simplify.exp-ln'`. */ readonly key: string; /** Values the app renders: an `Expr` via `toLatex`; strings are names; numbers are orders and step indices. */ readonly params: Readonly<Record<string, Expr | number | string>>; };",
+      "jsdocSummary": ""
+    },
+    {
+      "subpath": "./derivation",
+      "name": "TEMPLATE_KEYS",
+      "kind": "variable",
+      "signature": "export declare const TEMPLATE_KEYS: readonly string[];",
+      "jsdocSummary": "Every template key a derivation can emit, for apps to check their translations."
+    },
+    {
+      "subpath": "./derivative",
+      "name": "CasInput",
+      "kind": "type",
+      "signature": "export type CasInput = Expr | string;",
+      "jsdocSummary": "An expr AST, or a string parsed with expr's canonical `scientific` syntax."
+    },
+    {
+      "subpath": "./derivative",
+      "name": "CasOptions",
+      "kind": "type",
+      "signature": "export type CasOptions = { /** Functions and constants of the input. Default `scientific`. */ readonly language?: Language; /** Signs the caller knows, per variable. A rewrite that relies on one returns it as a condition with reason `assumed`. */ readonly assume?: Assumptions; readonly limits?: Partial<CasLimits>; /** Checked every 1 024 fuel units; the call throws `signal.reason` once it is aborted. */ readonly signal?: AbortSignalLike; /** `'fraction'` (default) prints `x/50`; `'decimal'` prints a terminating rational as a decimal (`0.02*x`). */ readonly numbers?: 'fraction' | 'decimal'; };",
+      "jsdocSummary": ""
+    },
+    {
+      "subpath": "./derivative",
+      "name": "CasResult",
+      "kind": "type",
+      "signature": "export type CasResult = { readonly result: Expr; readonly conditions: readonly Condition[]; };",
+      "jsdocSummary": ""
+    },
+    {
+      "subpath": "./derivative",
+      "name": "CasTextFailure",
+      "kind": "type",
+      "signature": "export type CasTextFailure = ParseFailure | FailureOf<(typeof CAS_TEXT_FAILURES)[number]>;",
+      "jsdocSummary": "A failure value returned by a cas verb given a string: `parse`'s own failure, or one of {@link CAS_TEXT_FAILURES}."
+    },
+    {
+      "subpath": "./derivative",
+      "name": "Condition",
+      "kind": "type",
+      "signature": "export type Condition = { readonly subject: Expr; readonly relation: Relation; readonly reason: 'domain' | 'differentiable' | 'assumed'; };",
+      "jsdocSummary": "A restriction the result relies on (RFC §6). `subject` is canonical, e.g. `x - 1`."
+    },
+    {
+      "subpath": "./derivative",
+      "name": "derivative",
+      "kind": "function",
+      "signature": "export declare function derivative(input: Expr, variable: string, options?: DerivativeOptions): CasResult; ; export declare function derivative(input: CasInput, variable: string, options?: DerivativeOptions): CasResult | CasTextFailure;",
+      "jsdocSummary": "The derivative of `input` with respect to `variable`; every other name is a constant (a partial derivative). Higher orders are normalized between orders. `conditions` lists where the result holds: the input's restrictions the result no longer shows (`ln(x)` → `1/x` needs `x > 0`, reason `domain`) and the points where a rule needs more (`abs(x)` → `sign(x)` needs `x ≠ 0`, reason `differentiable`)."
+    },
+    {
+      "subpath": "./derivative",
+      "name": "DerivativeOptions",
+      "kind": "type",
+      "signature": "export type DerivativeOptions = CasOptions & { /** How many times to differentiate. Default 1; at most the `order` budget (default 10). */ readonly order?: number; /** False returns the last order's raw derivative (`fold` applied only) instead of the readable normal form. Default true. */ readonly simplify?: boolean; };",
+      "jsdocSummary": ""
+    },
+    {
+      "subpath": "./polynomial",
+      "name": "CasTextFailure",
+      "kind": "type",
+      "signature": "export type CasTextFailure = ParseFailure | FailureOf<(typeof CAS_TEXT_FAILURES)[number]>;",
+      "jsdocSummary": "A failure value returned by a cas verb given a string: `parse`'s own failure, or one of {@link CAS_TEXT_FAILURES}."
+    },
+    {
+      "subpath": "./polynomial",
+      "name": "Coefficient",
+      "kind": "type",
+      "signature": "export type Coefficient = { readonly value: Expr; readonly rational: Rational | null; };",
+      "jsdocSummary": "One coefficient: a canonical expression in ℚ(π, e), and its value when it is rational."
+    },
+    {
+      "subpath": "./polynomial",
+      "name": "collect",
+      "kind": "function",
+      "signature": "export declare function collect(input: Expr, variable: string, options?: CasOptions): CasResult; ; export declare function collect(input: CasInput, variable: string, options?: CasOptions): CasResult | CasTextFailure;",
+      "jsdocSummary": "Grouped by powers of `variable`: `(2*pi + 3)*x + y`. Coefficients may hold other names, π, e and kernels."
+    },
+    {
+      "subpath": "./polynomial",
+      "name": "exactRoots",
+      "kind": "function",
+      "signature": "export declare function exactRoots(form: PolynomialForm, options?: CasOptions): ExactRoots;",
+      "jsdocSummary": "Closed-form roots of a `polynomialIn` result: rational and quadratic-surd roots over ℚ, and roots in ℚ(π, e) and its square roots for π/e coefficients (`pi*x = 1` → `1/pi`). A quadratic whose discriminant's sign the `digits` budget cannot decide goes to `numeric`. Zero-testing assumes π and e are algebraically independent (standard, unproven; see the README)."
+    },
+    {
+      "subpath": "./polynomial",
+      "name": "ExactRoots",
+      "kind": "type",
+      "signature": "export type ExactRoots = { /** Closed-form roots; `real: false` for complex ones, which print with `i`. */ readonly roots: readonly { readonly value: Expr; readonly multiplicity: number; readonly real: boolean; }[]; /** Parts with no closed form here, ascending float coefficients, for a numeric solver. */ readonly numeric: readonly { readonly coefficients: readonly number[]; readonly multiplicity: number; }[]; /** False when `numeric` is non-empty. */ readonly exact: boolean; };",
+      "jsdocSummary": ""
+    },
+    {
+      "subpath": "./polynomial",
+      "name": "expand",
+      "kind": "function",
+      "signature": "export declare function expand(input: Expr, options?: CasOptions): CasResult; ; export declare function expand(input: CasInput, options?: CasOptions): CasResult | CasTextFailure;",
+      "jsdocSummary": "Products and integer powers of sums multiplied out; like terms collected. A quotient comes back as one fraction, cancelled by the gcd (the `rationalize` form). Kernels (`sin(x)`, `sqrt(x)`) stay atoms."
+    },
+    {
+      "subpath": "./polynomial",
+      "name": "factor",
+      "kind": "function",
+      "signature": "export declare function factor(input: Expr, variable: string, options?: CasOptions): Factored; ; export declare function factor(input: CasInput, variable: string, options?: CasOptions): Factored | CasTextFailure;",
+      "jsdocSummary": "`input` as content times a product of factors in `variable` (RFC §8.2). Rational coefficients are factored completely over ℚ by Zassenhaus's algorithm; every factor returned is proven irreducible, and a budget that runs out (`factorDegree`, `factorDigits`, `liftDigits`, `recombination`) throws `CasLimitError` instead of returning a partial answer."
+    },
+    {
+      "subpath": "./polynomial",
+      "name": "Factored",
+      "kind": "type",
+      "signature": "export type Factored = { /** The constant factor: a rational, or for coefficients in other names, π or e, the part without the variable. */ readonly content: Expr; /** Factors in the variable, by degree then text, each with coprime integer coefficients and a positive leading coefficient. */ readonly factors: readonly { readonly factor: Expr; readonly multiplicity: number; }[]; /** * True when every factor is irreducible. Each square-free part with * rational coefficients (after the content, which may hold other names, π * or e) is factored completely over ℚ. A part whose coefficients still * involve other names, π or e stays whole, and `complete` is false (v1 has * no multivariate factoring), unless it has degree 1 in the variable: such * a part is primitive, so it is irreducible (`x^2 + 2xy + y^2` is * `(x + y)^2`, complete). */ readonly complete: boolean; /** Restrictions of the input the factored form no longer shows (`x/x*(x - 1)`: x ≠ 0). */ readonly conditions: readonly Condition[]; };",
+      "jsdocSummary": ""
+    },
+    {
+      "subpath": "./polynomial",
+      "name": "gcd",
+      "kind": "function",
+      "signature": "export declare function gcd(a: Expr, b: Expr, options?: CasOptions): CasResult; ; export declare function gcd(a: CasInput, b: CasInput, options?: CasOptions): CasResult | CasTextFailure;",
+      "jsdocSummary": "The gcd of two polynomials over ℚ: monic when it has one generator, otherwise with coprime integer coefficients and the term that prints first positive (`x - pi`). Generators include names, π, e and kernels."
+    },
+    {
+      "subpath": "./polynomial",
+      "name": "PolynomialForm",
+      "kind": "type",
+      "signature": "export type PolynomialForm = Extract<PolynomialIn, { readonly kind: 'polynomial'; }>;",
+      "jsdocSummary": ""
+    },
+    {
+      "subpath": "./polynomial",
+      "name": "polynomialIn",
+      "kind": "function",
+      "signature": "export declare function polynomialIn(input: Expr, variable: string, options?: CasOptions): PolynomialIn; ; export declare function polynomialIn(input: CasInput, variable: string, options?: CasOptions): PolynomialIn | CasTextFailure;",
+      "jsdocSummary": "The input as a polynomial in `variable` with coefficients in ℚ(π, e). It answers a question, so \"not a polynomial\" is a result, not an error: `rational` gives numerator and denominator coefficients after cancellation, `other` says why and where. Conditions list the divisors the result no longer shows (`x/x - 1` is `[]` with `x ≠ 0`)."
+    },
+    {
+      "subpath": "./polynomial",
+      "name": "PolynomialIn",
+      "kind": "type",
+      "signature": "export type PolynomialIn = { readonly kind: 'polynomial'; /** Ascending; `[]` for the zero polynomial. */ readonly coefficients: readonly Coefficient[]; readonly conditions: readonly Condition[]; } | { readonly kind: 'rational'; readonly numerator: readonly Coefficient[]; /** The roots of the denominator are excluded. */ readonly denominator: readonly Coefficient[]; readonly conditions: readonly Condition[]; } | { readonly kind: 'other'; /** `transcendental`: a kernel contains the variable; `unsupported-constant`: `sqrt(2)`, `ln(2)`…; `other-variable`: another free name. */ readonly reason: 'transcendental' | 'unsupported-constant' | 'other-variable'; /** The first offending node of the input. */ readonly span: Span; };",
+      "jsdocSummary": ""
+    },
+    {
+      "subpath": "./polynomial",
+      "name": "rationalize",
+      "kind": "function",
+      "signature": "export declare function rationalize(input: Expr, options?: CasOptions): Rationalized; ; export declare function rationalize(input: CasInput, options?: CasOptions): Rationalized | CasTextFailure;",
+      "jsdocSummary": "One fraction `numerator/denominator` with polynomial parts, cancelled by the gcd. Throws `not-rational` on a kernel."
+    },
+    {
+      "subpath": "./polynomial",
+      "name": "Rationalized",
+      "kind": "type",
+      "signature": "export type Rationalized = { readonly numerator: Expr; readonly denominator: Expr; readonly conditions: readonly Condition[]; };",
+      "jsdocSummary": ""
+    },
+    {
+      "subpath": "./simplify",
+      "name": "Assumption",
+      "kind": "type",
+      "signature": "export type Assumption = 'nonzero' | 'positive' | 'nonnegative' | 'negative';",
+      "jsdocSummary": "What the caller knows about one variable's sign (RFC §6). v1 is real-only: every variable ranges over ℝ."
+    },
+    {
+      "subpath": "./simplify",
+      "name": "Assumptions",
+      "kind": "type",
+      "signature": "export type Assumptions = Readonly<Record<string, Assumption>>;",
+      "jsdocSummary": "Assumptions per variable name, for one call."
+    },
+    {
+      "subpath": "./simplify",
+      "name": "CasInput",
+      "kind": "type",
+      "signature": "export type CasInput = Expr | string;",
+      "jsdocSummary": "An expr AST, or a string parsed with expr's canonical `scientific` syntax."
+    },
+    {
+      "subpath": "./simplify",
+      "name": "CasOptions",
+      "kind": "type",
+      "signature": "export type CasOptions = { /** Functions and constants of the input. Default `scientific`. */ readonly language?: Language; /** Signs the caller knows, per variable. A rewrite that relies on one returns it as a condition with reason `assumed`. */ readonly assume?: Assumptions; readonly limits?: Partial<CasLimits>; /** Checked every 1 024 fuel units; the call throws `signal.reason` once it is aborted. */ readonly signal?: AbortSignalLike; /** `'fraction'` (default) prints `x/50`; `'decimal'` prints a terminating rational as a decimal (`0.02*x`). */ readonly numbers?: 'fraction' | 'decimal'; };",
+      "jsdocSummary": ""
+    },
+    {
+      "subpath": "./simplify",
+      "name": "CasResult",
+      "kind": "type",
+      "signature": "export type CasResult = { readonly result: Expr; readonly conditions: readonly Condition[]; };",
+      "jsdocSummary": ""
+    },
+    {
+      "subpath": "./simplify",
+      "name": "CasTextFailure",
+      "kind": "type",
+      "signature": "export type CasTextFailure = ParseFailure | FailureOf<(typeof CAS_TEXT_FAILURES)[number]>;",
+      "jsdocSummary": "A failure value returned by a cas verb given a string: `parse`'s own failure, or one of {@link CAS_TEXT_FAILURES}."
+    },
+    {
+      "subpath": "./simplify",
+      "name": "Condition",
+      "kind": "type",
+      "signature": "export type Condition = { readonly subject: Expr; readonly relation: Relation; readonly reason: 'domain' | 'differentiable' | 'assumed'; };",
+      "jsdocSummary": "A restriction the result relies on (RFC §6). `subject` is canonical, e.g. `x - 1`."
+    },
+    {
+      "subpath": "./simplify",
+      "name": "simplify",
+      "kind": "function",
+      "signature": "export declare function simplify(input: Expr, options?: CasOptions): SimplifyResult; ; export declare function simplify(input: CasInput, options?: CasOptions): SimplifyResult | CasTextFailure;",
+      "jsdocSummary": "Simplifies by the rule table of RFC §7 and prints the readable normal form. `conditions` lists every restriction of the input the result no longer shows (reason `domain`) and every caller assumption a rewrite relied on (reason `assumed`). `applied` lists the rule ids that changed something. A string that does not parse returns `parse`'s failure; one the verb cannot handle returns `UnsupportedText`, one over a budget `OverCasBudget`, and one without a value (`x/0`) `NoCasValue`. For an `Expr` the same cases throw."
+    },
+    {
+      "subpath": "./simplify",
+      "name": "SimplifyResult",
+      "kind": "type",
+      "signature": "export type SimplifyResult = CasResult & { /** The rules that changed something, in table order. */ readonly applied: readonly SimplifyRule[]; };",
+      "jsdocSummary": ""
+    },
+    {
+      "subpath": "./simplify",
+      "name": "SimplifyRule",
+      "kind": "type",
+      "signature": "export type SimplifyRule = 'fold' | 'expand' | 'collect' | 'cancel' | 'integer-powers' | 'fractional-powers' | 'sqrt-of-square' | 'square-of-sqrt' | 'exp-ln' | 'ln-exp' | 'exp-product' | 'abs-sign' | 'parity' | 'special-values' | 'factor-out';",
+      "jsdocSummary": "The rule ids of RFC §7, in table order. The same ids label simplification steps in a derivation."
+    }
+  ],
+  "groups": [],
+  "errorCodes": [
+    "cas.no_value",
+    "cas.over_budget",
+    "cas.unsupported_text"
+  ]
+}
