@@ -1,4 +1,4 @@
-Read-only mirror of `@arki/cas` v0.1.0. Source and issues: arki-labs/arki. Docs: https://arki.dev/packages/cas. Published 2026-11-03 with provenance https://www.npmjs.com/package/@arki/cas/v/0.1.0#provenance.
+Read-only mirror of `@arki/cas` v0.1.1. Source and issues: arki-labs/arki. Docs: https://arki.dev/packages/cas. Published 2026-11-23 with provenance https://www.npmjs.com/package/@arki/cas/v/0.1.1#provenance.
 
 # @arki/cas
 
@@ -57,7 +57,17 @@ polynomialIn('sin(x) - 1', 'x'); // { kind: 'other', reason: 'transcendental', s
 
 ## Runtime support
 
-Pure TypeScript on `@arki/expr` and `@arki/math`, with no Node built-ins. It runs where those two run: Node, Bun, Deno and browsers.
+Pure TypeScript on `@arki/expr` and `@arki/math`, with no Node built-ins. It runs where those two run: Node, Bun, Deno, browsers and React Native (Hermes).
+
+<!-- runtimes:start -->
+| Runtime | Result | Version tested | Date (UTC) |
+| --- | --- | --- | --- |
+| node | pass | v22.13.1 | 2026-11-05 |
+| bun | pass | 1.4.2 | 2026-11-05 |
+| deno | pass | 2.9.8 | 2026-11-05 |
+| browser | pass | Chromium 156.0.8078.4 | 2026-11-05 |
+| hermes | pass | V1 250829098.0.17 | 2026-11-05 |
+<!-- runtimes:end -->
 
 ## Public imports
 
@@ -84,6 +94,10 @@ Every verb returns a result, returns a failure (for a string) or throws (for an 
 | `UnsupportedText` | `cas.unsupported_text` | The text parses, but the verb does not handle it, such as `floor(x)` given to `derivative`.  |
 | `OverCasBudget`   | `cas.over_budget`      | The text went over a cas budget. The `cause` is a `CasLimitError` with `budget` and `limit`. |
 | `NoCasValue`      | `cas.no_value`         | The text parses, but it has no value, such as `x/0`, or a number grew too big.               |
+
+## Observability
+
+Pure computation: no I/O, so no spans or metrics.
 
 ## Limits
 
